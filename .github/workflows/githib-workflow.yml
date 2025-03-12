@@ -1,0 +1,34 @@
+name: Deploy to AI application in K8s using Helm chart
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.26.0' 
+
+    - name: Install Helm
+      uses: azure/setup-helm@v1
+
+    - name: Create kubeconfig file
+      run: echo "${{ secrets.KUBECONFIG }}" > ${{ github.workspace }}/kubeconfig
+
+    - name: Deploy to Kubernetes using Helm
+      env:
+        KUBECONFIG: ${{ github.workspace }}/kubeconfig
+      run: |
+       kubectl create ns ai       cd helm/ai-app       helm upgrade --install ai-app . \
+       --set image.repository=yourImageRepository \
+       --set image.tag=${{ github.sha }} \
+       --namespace ai
