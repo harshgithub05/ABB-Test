@@ -1,0 +1,8 @@
+argocd app create ai-app \
+	--repo https://github.com/harshgithub05/ABB-Test.git \
+	--path ABB-Test/helm/ \
+	--dest-server https://kubernetes.default.svc \
+	--dest-namespace ai-app \
+	--sync-option CreateNamespace=true \
+	--parameter namespace=ai-app \
+    application 'ai-app' created
