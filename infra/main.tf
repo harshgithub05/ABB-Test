@@ -52,7 +52,7 @@ module "hub_network" {
 }
 
 module "aks_network" {
-  source                       = "./modules/virtual_network"
+  source                       = "./terraform-modules/vnet"
   resource_group_name          = azurerm_resource_group.rg.name
   location                     = var.location
   vnet_name                    = var.aks_vnet_name
@@ -87,33 +87,9 @@ module "aks_network" {
   ]
 }
 
-module "vnet_peering" {
-  source              = "./modules/virtual_network_peering"
-  vnet_1_name         = var.hub_vnet_name
-  vnet_1_id           = module.hub_network.vnet_id
-  vnet_1_rg           = azurerm_resource_group.rg.name
-  vnet_2_name         = var.aks_vnet_name
-  vnet_2_id           = module.aks_network.vnet_id
-  vnet_2_rg           = azurerm_resource_group.rg.name
-  peering_name_1_to_2 = "${var.hub_vnet_name}To${var.aks_vnet_name}"
-  peering_name_2_to_1 = "${var.aks_vnet_name}To${var.hub_vnet_name}"
-}
-
-module "firewall" {
-  source                       = "./modules/firewall"
-  name                         = var.firewall_name
-  resource_group_name          = azurerm_resource_group.rg.name
-  zones                        = var.firewall_zones
-  threat_intel_mode            = var.firewall_threat_intel_mode
-  location                     = var.location
-  sku_name                     = var.firewall_sku_name 
-  sku_tier                     = var.firewall_sku_tier
-  pip_name                     = "${var.firewall_name}PublicIp"
-  subnet_id                    = module.hub_network.subnet_ids["AzureFirewallSubnet"]
-  log_analytics_workspace_id   = module.log_analytics_workspace.id
-}
 
 module "routetable" {
+  count                = 0
   source               = "./modules/route_table"
   resource_group_name  = azurerm_resource_group.rg.name
   location             = var.location
@@ -134,19 +110,8 @@ module "routetable" {
   }
 }
 
-module "container_registry" {
-  source                       = "./modules/container_registry"
-  name                         = var.acr_name
-  resource_group_name          = azurerm_resource_group.rg.name
-  location                     = var.location
-  sku                          = var.acr_sku
-  admin_enabled                = var.acr_admin_enabled
-  georeplication_locations     = var.acr_georeplication_locations
-  log_analytics_workspace_id   = module.log_analytics_workspace.id
-}
-
 module "aks_cluster" {
-  source                                   = "./modules/aks"
+  source                                   = "./terraform-modules/aks"
   name                                     = var.aks_cluster_name
   location                                 = var.location
   resource_group_name                      = azurerm_resource_group.rg.name
@@ -218,6 +183,7 @@ resource "random_string" "storage_account_suffix" {
 }
 
 module "storage_account" {
+  count                       = 0
   source                      = "./modules/storage_account"
   name                        = "${local.storage_account_prefix}${random_string.storage_account_suffix.result}"
   location                    = var.location
@@ -228,6 +194,7 @@ module "storage_account" {
 }
 
 module "bastion_host" {
+  count                        = 0
   source                       = "./modules/bastion_host"
   name                         = var.bastion_host_name
   location                     = var.location
@@ -237,6 +204,7 @@ module "bastion_host" {
 }
 
 module "virtual_machine" {
+  count                               = 0
   source                              = "./modules/virtual_machine"
   name                                = var.vm_name
   size                                = var.vm_size
@@ -260,6 +228,7 @@ module "virtual_machine" {
 }
 
 module "node_pool" {
+  count                        = 0
   source = "./modules/node_pool"
   resource_group_name = azurerm_resource_group.rg.name
   kubernetes_cluster_id = module.aks_cluster.id
@@ -286,6 +255,7 @@ module "node_pool" {
 }
 
 module "key_vault" {
+  count                           = 0
   source                          = "./modules/key_vault"
   name                            = var.key_vault_name
   location                        = var.location
@@ -305,6 +275,7 @@ module "key_vault" {
 }
 
 module "acr_private_dns_zone" {
+  count                        = 0
   source                       = "./modules/private_dns_zone"
   name                         = "privatelink.azurecr.io"
   resource_group_name          = azurerm_resource_group.rg.name
@@ -321,6 +292,7 @@ module "acr_private_dns_zone" {
 }
 
 module "key_vault_private_dns_zone" {
+  count                        = 0
   source                       = "./modules/private_dns_zone"
   name                         = "privatelink.vaultcore.azure.net"
   resource_group_name          = azurerm_resource_group.rg.name
@@ -337,6 +309,7 @@ module "key_vault_private_dns_zone" {
 }
 
 module "blob_private_dns_zone" {
+  count                        = 0
   source                       = "./modules/private_dns_zone"
   name                         = "privatelink.blob.core.windows.net"
   resource_group_name          = azurerm_resource_group.rg.name
@@ -353,6 +326,7 @@ module "blob_private_dns_zone" {
 }
 
 module "acr_private_endpoint" {
+  count                          = 0
   source                         = "./modules/private_endpoint"
   name                           = "${module.container_registry.name}PrivateEndpoint"
   location                       = var.location
@@ -367,6 +341,7 @@ module "acr_private_endpoint" {
 }
 
 module "key_vault_private_endpoint" {
+  count                          = 0
   source                         = "./modules/private_endpoint"
   name                           = "${title(module.key_vault.name)}PrivateEndpoint"
   location                       = var.location
@@ -381,6 +356,7 @@ module "key_vault_private_endpoint" {
 }
 
 module "blob_private_endpoint" {
+  count                          = 0
   source                         = "./modules/private_endpoint"
   name                           = "${title(module.storage_account.name)}PrivateEndpoint"
   location                       = var.location
